@@ -17,27 +17,4 @@ A Blazor WebAssembly multiplayer hangman duel game.
 3. Run `dotnet run` or launch from your IDE.
 4. Open `http://localhost:5259` in the browser.
 
-## GitHub repo creation
 
-If you have `gh` installed and authenticated with GitHub, run:
-
-```bash
-cd /d d:\coding\Becenicha
-
-gh repo create "hangman-wasm-game" --public --source . --remote origin --push
-```
-
-If you only want to create the repo manually on GitHub, use this local push:
-
-```bash
-cd /d d:\coding\Becenicha
-
-git remote add origin https://github.com/<your-username>/hangman-wasm-game.git
-
-git push -u origin master
-```
-
-## Notes
-
-- The local branch is currently `master`.
-- Replace `<your-username>` with your GitHub username.
