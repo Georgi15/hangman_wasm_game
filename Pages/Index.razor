@@ -1,0 +1,277 @@
+﻿@page "/"
+@page "/index.html"
+@inject IJSRuntime JsRuntime
+@inject HttpClient HttpClient
+
+<PageTitle>Hangman Duel</PageTitle>
+
+<div class="container py-4">
+    <div class="card shadow-sm p-4 mb-4">
+        <h1 class="mb-3">Hangman Duel</h1>
+        <p class="text-muted">Save your name in a cookie, invite another player by name, and race to guess the opponent's secret word with the fewest guesses.</p>
+
+        @if (!HasName)
+        {
+            <div>
+                <div class="mb-3">
+                    <label class="form-label">Enter your player name</label>
+                    <input class="form-control" @bind="EnteredName" placeholder="Your name" />
+                </div>
+                <button class="btn btn-primary" @onclick="SaveName">Save name</button>
+                @if (!string.IsNullOrEmpty(StatusMessage))
+                {
+                    <div class="alert alert-info mt-3">@StatusMessage</div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="mb-3 d-flex flex-wrap align-items-center gap-3">
+                <div><strong>Player:</strong> @CurrentName</div>
+                <button class="btn btn-link btn-sm" @onclick="ClearName">Change name</button>
+            </div>
+
+            <div class="card p-3 mb-4">
+                <h2>Online matchmaking</h2>
+                <p class="text-muted">Join the public queue and get paired with another live player.</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <button class="btn btn-primary" @onclick="JoinOnlineMatch">Find online opponent</button>
+                    <button class="btn btn-outline-secondary" @onclick="RefreshOnlineStatus">Refresh status</button>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(OnlineStatusMessage))
+                {
+                    <div class="alert alert-info mt-3">@OnlineStatusMessage</div>
+                }
+                @if (!string.IsNullOrWhiteSpace(OnlineMatchId))
+                {
+                    <div class="small text-muted mt-2">Live match id: @OnlineMatchId</div>
+                }
+            </div>
+
+            @if (!string.IsNullOrEmpty(StatusMessage))
+            {
+                <div class="alert alert-info">@StatusMessage</div>
+            }
+
+            <div class="row gy-4">
+                <div class="col-lg-6">
+                    <div class="card p-3">
+                        <h2>Create a new challenge</h2>
+                        <div class="mb-3">
+                            <label class="form-label">Opponent name</label>
+                            <input class="form-control" @bind="NewOpponentName" placeholder="Opponent name" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Your secret word</label>
+                            <input class="form-control" type="password" @bind="NewSecretWord" placeholder="Word your opponent must guess" />
+                        </div>
+                        <button class="btn btn-success" @onclick="CreateChallenge">Invite opponent</button>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="card p-3">
+                        <h2>Incoming challenges</h2>
+                        @if (IncomingChallenges.Any())
+                        {
+                            <ul class="list-group">
+                                @foreach (var match in IncomingChallenges)
+                                {
+                                    <li class="list-group-item d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <div><strong>@match.PlayerA</strong> invited you</div>
+                                            <div class="text-muted small">Created @match.CreatedAt.ToLocalTime().ToString("g")</div>
+                                        </div>
+                                        <button class="btn btn-success btn-sm" @onclick="@(() => SelectMatch(match.MatchId))">Accept</button>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <div class="text-muted">No incoming challenges right now.</div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="row gy-4 mt-3">
+                <div class="col-lg-6">
+                    <div class="card p-3">
+                        <h2>Active matches</h2>
+                        @if (ActiveMatches.Any())
+                        {
+                            <ul class="list-group">
+                                @foreach (var match in ActiveMatches)
+                                {
+                                    <li class="list-group-item d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <div><strong>@match.OpponentName(CurrentName)</strong></div>
+                                            <div class="text-muted small">@match.StateText(CurrentName)</div>
+                                            @if (!match.IsReady && !match.IsCurrentPlayerCreator(CurrentName))
+                                            {
+                                                <div class="text-success small">This is an incoming challenge—accept it to start.</div>
+                                            }
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            @if (!match.IsReady && !match.IsCurrentPlayerCreator(CurrentName))
+                                            {
+                                                <button class="btn btn-success btn-sm" @onclick="@(() => SelectMatch(match.MatchId))">Accept</button>
+                                            }
+                                            <button class="btn btn-primary btn-sm" @onclick="@(() => SelectMatch(match.MatchId))">Open</button>
+                                        </div>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <div class="text-muted">No active matches yet. Create or accept a challenge.</div>
+                        }
+                        <button class="btn btn-link btn-sm mt-3" @onclick="RefreshMatches">Refresh</button>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="card p-3">
+                        <h2>Finished results</h2>
+                        @if (FinishedMatches.Any())
+                        {
+                            <ul class="list-group">
+                                @foreach (var finished in FinishedMatches)
+                                {
+                                    <li class="list-group-item">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <div><strong>@finished.OpponentName(CurrentName)</strong></div>
+                                                <div class="text-muted small">@finished.ResultText(CurrentName)</div>
+                                                <div class="small">Your: @finished.MyGuesses(CurrentName) | Opponent: @finished.OpponentGuesses(CurrentName)</div>
+                                            </div>
+                                            <button class="btn btn-outline-primary btn-sm" @onclick="@(() => SelectMatch(finished.MatchId))">Open</button>
+                                        </div>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <div class="text-muted">No finished matches yet.</div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            @if (SelectedMatch != null)
+            {
+                <div class="row gy-4 mt-4">
+                    <div class="col-lg-8">
+                        <div class="card p-3">
+                            <h2>Match with @SelectedMatch.OpponentName(CurrentName)</h2>
+
+                            @if (!SelectedMatch.IsReady)
+                            {
+                                @if (SelectedMatch.IsCurrentPlayerCreator(CurrentName))
+                                {
+                                    <div class="alert alert-warning">Waiting for @SelectedMatch.OpponentName(CurrentName) to accept your challenge and enter their word.</div>
+                                }
+                                else
+                                {
+                                    <div class="mb-3">
+                                        <label class="form-label">Enter your secret word</label>
+                                        <input class="form-control" type="password" @bind="AcceptSecretWord" placeholder="Word your opponent must guess" />
+                                    </div>
+                                    <button class="btn btn-success" @onclick="AcceptChallenge">Accept challenge</button>
+                                }
+                            }
+                            else if (SelectedMatch.MyCompleted(CurrentName))
+                            {
+                                <div class="alert alert-success">You solved the puzzle in @SelectedMatch.MyGuesses(CurrentName) guesses.</div>
+                                @if (SelectedMatch.BothCompleted)
+                                {
+                                    <div class="mb-3"><strong>Result:</strong> @SelectedMatch.ResultText(CurrentName)</div>
+                                    <div class="mb-2">Your guesses: @SelectedMatch.MyGuesses(CurrentName). Opponent guesses: @SelectedMatch.OpponentGuesses(CurrentName).</div>
+                                    <button class="btn btn-primary" @onclick="FinishMatch">Finish match</button>
+                                }
+                                else
+                                {
+                                    <div class="alert alert-info">Waiting for @SelectedMatch.OpponentName(CurrentName) to finish guessing.</div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="mb-3">
+                                    <div><strong>Word to guess:</strong> @SelectedMatch.MaskedWord(CurrentName)</div>
+                                    <div class="text-muted mt-2">Guesses so far: @SelectedMatch.MyGuesses(CurrentName)</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Guess a letter or the full word</label>
+                                    <input class="form-control" @bind="CurrentGuess" placeholder="Enter a letter or word" />
+                                </div>
+                                <button class="btn btn-primary" @onclick="SubmitGuess">Submit guess</button>
+                                @if (!string.IsNullOrEmpty(GuessMessage))
+                                {
+                                    <div class="alert alert-secondary mt-3">@GuessMessage</div>
+                                }
+                            }
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <div class="card p-3 mb-4">
+                            <h3 class="h5">Match history</h3>
+                            <div class="mb-3">
+                                <div class="text-muted small">Guessed letters</div>
+                                @if (!string.IsNullOrWhiteSpace(SelectedMatch.MyGuessedLetters(CurrentName)))
+                                {
+                                    <div class="d-flex flex-wrap gap-2 mt-2">
+                                        @foreach (var letter in SelectedMatch.MyGuessedLetters(CurrentName).Distinct())
+                                        {
+                                            <span class="badge bg-secondary text-uppercase">@letter</span>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="text-muted">No letters guessed yet.</div>
+                                }
+                            </div>
+
+                            <div>
+                                <div class="text-muted small">Past guesses</div>
+                                @{
+                                    var historyItems = SelectedMatch.MyGuessHistory(CurrentName)?.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()).Where(x => !string.IsNullOrWhiteSpace(x)).ToArray() ?? Array.Empty<string>();
+                                }
+                                @if (historyItems.Any())
+                                {
+                                    <div class="d-flex flex-column gap-2 mt-2">
+                                        @foreach (var item in historyItems)
+                                        {
+                                            <span class="badge bg-light text-dark text-start">@item</span>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="text-muted">No guesses yet.</div>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="card p-3">
+                            <h3 class="h5">Match summary</h3>
+                            <div class="mb-2"><strong>Status:</strong> @SelectedMatch.StateText(CurrentName)</div>
+                            <div class="mb-2"><strong>Opponent:</strong> @SelectedMatch.OpponentName(CurrentName)</div>
+                            <div class="mb-2"><strong>Created:</strong> @SelectedMatch.CreatedAt.ToLocalTime().ToString("g")</div>
+                            @if (SelectedMatch.BothCompleted)
+                            {
+                                <div class="alert alert-info mt-3">
+                                    <strong>Final result:</strong> @SelectedMatch.ResultText(CurrentName)
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>

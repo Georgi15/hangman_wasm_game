@@ -1,0 +1,15 @@
+D:\coding\Becenicha\tools\Launcher\bin\Debug\net8.0\HangmanGameLauncher.exe
+D:\coding\Becenicha\tools\Launcher\bin\Debug\net8.0\HangmanGameLauncher.deps.json
+D:\coding\Becenicha\tools\Launcher\bin\Debug\net8.0\HangmanGameLauncher.runtimeconfig.json
+D:\coding\Becenicha\tools\Launcher\bin\Debug\net8.0\HangmanGameLauncher.dll
+D:\coding\Becenicha\tools\Launcher\bin\Debug\net8.0\HangmanGameLauncher.pdb
+D:\coding\Becenicha\tools\Launcher\obj\Debug\net8.0\Launcher.GeneratedMSBuildEditorConfig.editorconfig
+D:\coding\Becenicha\tools\Launcher\obj\Debug\net8.0\Launcher.AssemblyInfoInputs.cache
+D:\coding\Becenicha\tools\Launcher\obj\Debug\net8.0\Launcher.AssemblyInfo.cs
+D:\coding\Becenicha\tools\Launcher\obj\Debug\net8.0\Launcher.csproj.CoreCompileInputs.cache
+D:\coding\Becenicha\tools\Launcher\obj\Debug\net8.0\Launcher.sourcelink.json
+D:\coding\Becenicha\tools\Launcher\obj\Debug\net8.0\HangmanGameLauncher.dll
+D:\coding\Becenicha\tools\Launcher\obj\Debug\net8.0\refint\HangmanGameLauncher.dll
+D:\coding\Becenicha\tools\Launcher\obj\Debug\net8.0\HangmanGameLauncher.pdb
+D:\coding\Becenicha\tools\Launcher\obj\Debug\net8.0\Launcher.genruntimeconfig.cache
+D:\coding\Becenicha\tools\Launcher\obj\Debug\net8.0\ref\HangmanGameLauncher.dll

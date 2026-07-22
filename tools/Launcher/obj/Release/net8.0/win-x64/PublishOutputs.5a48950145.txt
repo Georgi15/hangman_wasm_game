@@ -1,0 +1,2 @@
+D:\coding\Becenicha\dist\launcher\HangmanGameLauncher.pdb
+D:\coding\Becenicha\dist\launcher\HangmanGameLauncher.exe
